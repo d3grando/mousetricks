@@ -1,6 +1,6 @@
 [mod]
 id = "mousetricks"
-version = "0.1.0"
+version = "0.2.0"
 priority = 100
 
 # Pinned: the four hooks marked "pinned" below target game functions that are
@@ -24,13 +24,15 @@ file = "crates/horizon-client/src/game.rs"
 name = "mousetricks_native"
 source = "native.rs"
 
-# Pinned: a mouse press, before the game handles it (the drag it may start is
-# noted; the press is never cancelled). `sort_mouse_press` is the first call
-# every mouse press over a screen makes; `inventory_press` itself holds a
-# `vec!` and can't be hooked.
+# Pinned: a mouse press, before the game handles it. A left or right press
+# goes on (the drag it may start is noted); a middle click on an empty spot
+# sorts and is cancelled (answering "handled", as the game's own sort button
+# does). `sort_mouse_press` is the first call every mouse press over a screen
+# makes; `inventory_press` itself holds a `vec!` and can't be hooked.
 [[injection]]
 id = "press"
 kind = "HEAD"
+cancellable = true
 target = "horizon_client::game::tweaks::Game<'_>::sort_mouse_press"
 helper = "press.rs"
 bindings = [
@@ -73,7 +75,8 @@ bindings = [
   { name = "slot", ty = "Option<usize>", value = "slot" },
 ]
 
-# Hook point: a drag whose release went to another screen ends.
+# Hook point: a drag whose release went to another screen ends; a paced sort
+# (on a server) makes its next clicks.
 [[injection]]
 id = "frame"
 kind = "HEAD"
@@ -81,6 +84,20 @@ target = "horizon_client::game::native_hooks::Game<'_>::native_frame"
 helper = "frame.rs"
 bindings = [
   { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "elapsed", ty = "std::time::Duration", value = "elapsed" },
+]
+
+# Hook point: the sort key over an inventory screen (keys reach it on any
+# screen).
+[[injection]]
+id = "key"
+kind = "HEAD"
+target = "horizon_client::game::native_hooks::Game<'_>::native_key"
+helper = "key.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "key", ty = "&str", value = "key" },
+  { name = "pressed", ty = "bool", value = "pressed" },
 ]
 
 # Hook points: the row in Options > Mods and its settings page.

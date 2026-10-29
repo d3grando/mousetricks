@@ -5,6 +5,6 @@ fn mousetricks_listed(mods: &mut Vec<crate::game::native_hooks::NativeMod>) {
         id: mt::ID.into(),
         title: format!("Mouse Tricks {}", mt::VERSION),
         description: mt::DESCRIPTION.into(),
-        keys: Vec::new(),
+        keys: mt::KEYS.iter().map(|k| k.map(String::from)).collect(),
     });
 }
